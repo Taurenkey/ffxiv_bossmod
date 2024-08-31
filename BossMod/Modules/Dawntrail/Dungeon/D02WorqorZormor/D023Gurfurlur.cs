@@ -1,4 +1,6 @@
-﻿namespace BossMod.Dawntrail.Dungeon.D02WorqorZormor.D023Gurfurlur;
+﻿using static BossMod.Components.GenericAOEs;
+
+namespace BossMod.Dawntrail.Dungeon.D02WorqorZormor.D023Gurfurlur;
 
 public enum OID : uint
 {
@@ -108,7 +110,7 @@ class Sledgehammer(BossModule module) : Components.GenericWildCharge(module, 4, 
 
 class AuraSpheres : Components.PersistentInvertibleVoidzone
 {
-    public AuraSpheres(BossModule module) : base(module, 2.5f, m => m.Enemies(OID.AuraSphere).Where(x => !x.IsDead))
+    public AuraSpheres(BossModule module) : base(module, 2f, m => m.Enemies(OID.AuraSphere).Where(x => !x.IsDead))
     {
         InvertResolveAt = DateTime.MaxValue;
     }
@@ -117,6 +119,13 @@ class AuraSpheres : Components.PersistentInvertibleVoidzone
     {
         if (Sources(Module).Any(x => !Shape.Check(actor.Position, x)))
             hints.Add("Touch the balls!");
+    }
+
+    public override void AddAIHints(int slot, Actor actor, PartyRolesConfig.Assignment assignment, AIHints hints)
+    {
+        var orb = WorldState.Actors.Where(x => (OID)x.OID == OID.AuraSphere && !x.IsDead).OrderBy(x => x.DistanceToHitbox(WorldState.Party.Player())).FirstOrDefault();
+        if (orb != null)
+        hints.ForcedMovement = (orb!.Position - WorldState.Party.Player()!.Position).ToVec3();
     }
 }
 
@@ -135,14 +144,22 @@ abstract class Windswrath(BossModule module, ActionID aid) : Components.Knockbac
         if (IsImmune(slot, knockbackTime))
             return;
 
-        hints.AddForbiddenZone(new AOEShapeDonut(5, 60), caster.Position, activation: knockbackTime);
+        hints.AddForbiddenZone(new AOEShapeDonut(2f, 60), caster.Position, activation: knockbackTime);
     }
 }
+
 class WindswrathShort(BossModule module) : Windswrath(module, ActionID.MakeSpell(AID.WindswrathShort));
 class WindswrathLong(BossModule module) : Windswrath(module, ActionID.MakeSpell(AID.WindswrathLong));
 
-class BitingWind(BossModule module) : Components.PersistentVoidzone(module, 4, m => m.Enemies(OID.BitingWind));
-
+class BitingWind(BossModule module) : Components.PersistentVoidzone(module, 5f, m => m.Enemies(OID.BitingWind))
+{
+    public override void AddAIHints(int slot, Actor actor, PartyRolesConfig.Assignment assignment, AIHints hints)
+    {
+        base.AddAIHints(slot, actor, assignment, hints);
+        foreach (var w in ActiveAOEs(slot, actor))
+            hints.AddForbiddenZone(new AOEShapeCircle(5), w.Origin + 3 * w.Rotation.ToDirection());
+    }
+}
 class D023GurfurlurStates : StateMachineBuilder
 {
     public D023GurfurlurStates(BossModule module) : base(module)

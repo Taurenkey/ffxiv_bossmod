@@ -204,7 +204,14 @@ class DeepThunder(BossModule module) : Components.GenericTowers(module)
     }
 }
 
-class WroughtFire(BossModule module) : Components.BaitAwayCast(module, ActionID.MakeSpell(AID.WroughtFireAOE), new AOEShapeCircle(6), true);
+class WroughtFire(BossModule module) : Components.BaitAwayCast(module, ActionID.MakeSpell(AID.WroughtFireAOE), new AOEShapeCircle(6), true)
+{
+    public override void AddAIHints(int slot, Actor actor, PartyRolesConfig.Assignment assignment, AIHints hints)
+    {
+        foreach (var b in ActiveBaitsOn(actor))
+            hints.AddForbiddenZone(ShapeDistance.Circle(Module.Center, 12), b.Activation);
+    }
+}
 class Ashlayer(BossModule module) : Components.RaidwideCast(module, ActionID.MakeSpell(AID.Ashlayer));
 
 class D033MaulskullStates : StateMachineBuilder
