@@ -5,6 +5,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using System.IO;
 using System.Reflection;
 
 namespace BossMod;
@@ -66,7 +67,7 @@ public sealed class Plugin : IDalamudPlugin
         Service.Config.Modified.Subscribe(() => Service.Config.SaveToFile(dalamud.ConfigFile));
 
         CommandManager = commandManager;
-        CommandManager.AddHandler("/vbm", new CommandInfo(OnCommand) { HelpMessage = "Show boss mod config UI" });
+        CommandManager.AddHandler("/vbm", new CommandInfo(OnCommand) { HelpMessage = "Show boss mod settings UI" });
 
         ActionDefinitions.Instance.UnlockCheck = QuestUnlocked; // ensure action definitions are initialized and set unlock check functor (we don't really store the quest progress in clientstate, for now at least)
 
@@ -85,11 +86,12 @@ public sealed class Plugin : IDalamudPlugin
         _ipc = new(_rotation, _amex, _movementOverride, _ai);
         _dtr = new(_rotation, _ai);
 
-        _configUI = new(Service.Config, _ws, _rotationDB);
+        var replayDir = new DirectoryInfo(dalamud.ConfigDirectory.FullName + "/replays");
+        _configUI = new(Service.Config, _ws, replayDir, _rotationDB);
         _wndBossmod = new(_bossmod);
         _wndBossmodHints = new(_bossmod);
-        _wndReplay = new(_ws, _rotationDB, new(dalamud.ConfigDirectory.FullName + "/replays"));
-        _wndRotation = new(_rotation, _amex, () => OpenConfigUI("Presets"));
+        _wndReplay = new(_ws, _rotationDB, replayDir);
+        _wndRotation = new(_rotation, _amex, () => OpenConfigUI("Autorotation Presets"));
         _wndDebug = new(_ws, _rotation, _amex);
 
         dalamud.UiBuilder.DisableAutomaticUiHide = true;
@@ -157,7 +159,7 @@ public sealed class Plugin : IDalamudPlugin
     private void OpenConfigUI(string showTab = "")
     {
         _configUI.ShowTab(showTab);
-        _ = new UISimpleWindow("Boss mod config", _configUI.Draw, true, new(300, 300));
+        _ = new UISimpleWindow("Boss Mod Settings", _configUI.Draw, true, new(300, 300));
     }
 
     private void DrawUI()
