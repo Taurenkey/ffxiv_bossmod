@@ -45,8 +45,8 @@ sealed class AIBehaviour(AIController ctrl, RotationModuleManager autorot, Prese
         if (!forbidActions)
         {
             target = SelectPrimaryTarget(player, master);
-            if (target.Target != null || TargetIsForbidden(player.TargetID))
-                autorot.Hints.ForcedTarget ??= target.Target?.Actor;
+            //if (target.Target != null || TargetIsForbidden(player.TargetID))
+            //    autorot.Hints.ForcedTarget ??= target.Target?.Actor;
             AdjustTargetPositional(player, ref target);
         }
 
